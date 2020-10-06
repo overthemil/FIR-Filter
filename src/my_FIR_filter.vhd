@@ -4,7 +4,7 @@ use IEEE.NUMERIC_STD.ALL;
 
 entity my_FIR_filter is
 	generic (
-	    NUM_CONSTANTS   : INTEGER := 5;
+	    NUM_CONSTANTS   : INTEGER := 29;
         G_DATA_WIDTH    : INTEGER := 32
     );
 	port(   
@@ -31,11 +31,35 @@ architecture behav of my_FIR_filter is
     type filter_type_eight is array(0 to NUM_CONSTANTS-1) OF signed(7 downto 0);
     type filter_type_sixteen is array(0 to NUM_CONSTANTS-1) OF signed(15 downto 0);
     
-    constant h_values : filter_type_eight := (  "11110010",
-                                                "00011000",
-                                                "00110000",
-                                                "00011000",
-                                                "11110010");
+    constant h_values : filter_type_eight := (  "00000000",
+                                                "00000000",
+                                                "00000000",
+                                                "00000000",
+                                                "00000000",
+                                                "00000001",
+                                                "00000010",
+                                                "00000100",
+                                                "00000101",
+                                                "00000111",
+                                                "00001000",
+                                                "00001010",
+                                                "00001011",
+                                                "00001100",
+                                                "00001100",
+                                                "00001100",
+                                                "00001011",
+                                                "00001010",
+                                                "00001000",
+                                                "00000111",
+                                                "00000101",
+                                                "00000100",
+                                                "00000010",
+                                                "00000001",
+                                                "00000000",
+                                                "00000000",
+                                                "00000000",
+                                                "00000000",
+                                                "00000000");
     
     
     signal x_in : signed (7  downto 0) := (others => '0');
