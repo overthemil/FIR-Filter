@@ -4,6 +4,7 @@ use IEEE.NUMERIC_STD.ALL;
 
 entity my_FIR_filter is
 	generic (
+	    NUM_CONSTANTS   : INTEGER := 5;
         G_DATA_WIDTH    : INTEGER := 32
     );
 	port(   
@@ -17,50 +18,69 @@ entity my_FIR_filter is
 end my_FIR_filter;
 
 architecture behav of my_FIR_filter is
-  constant h0 : signed(7 downto 0) := "11110010";
-  constant h1 : signed(7 downto 0) := "00011000";
-  constant h2 : signed(7 downto 0) := "00110000";
-  constant h3 : signed(7 downto 0) := "00011000";
-  constant h4 : signed(7 downto 0) := "11110010";
-
-  signal x_in : signed (7  downto 0) := (others => '0');
-  signal y_out : signed (7 downto 0) := (others => '0'); 
-  signal M0,M1,M2,M3,M4 : signed(15 downto 0) := (others => '0');
-  signal add1,add2,add3,add4 : signed(15 downto 0) := (others => '0');
-  signal Q1,Q2,Q3,Q4 : signed(15 downto 0) := (others => '0');
-
+    component filter_comp is 
+        Port(   D        : in signed(15 downto 0);
+                Q        : out signed(15 downto 0);
+                h        : in signed(7 downto 0); 
+                x        : in signed (7 downto 0); 
+                out_vld  : out std_logic;
+                in_vld   : in std_logic;
+                CLK      : in std_logic);
+    end component;
+    
+    type filter_type_eight is array(0 to NUM_CONSTANTS-1) OF signed(7 downto 0);
+    type filter_type_sixteen is array(0 to NUM_CONSTANTS-1) OF signed(15 downto 0);
+    
+    constant h_values : filter_type_eight := (  "11110010",
+                                                "00011000",
+                                                "00110000",
+                                                "00011000",
+                                                "11110010");
+    
+    
+    signal x_in : signed (7  downto 0) := (others => '0');
+    signal y_out : signed (15 downto 0) := (others => '0'); 
+    signal add: filter_type_sixteen;
+    signal Q: filter_type_sixteen;
 begin            
-  -- multipliers
-  -- add code here to perform multiplications
-  M0 <= h0 * x_in;
-  M1 <= h1 * x_in;
-  M2 <= h2 * x_in;
-  M3 <= h3 * x_in;
-  M4 <= h4 * x_in;
-
-  -- adders
-  -- add code here to perform additions
-  add1 <= M3 + Q1;
-  add2 <= M2 + Q2;
-  add3 <= M1 + Q3;
-  add4 <= M0 + Q4;
-  
-  x_in <= signed(data_in);
-  y_out <= add4(14 downto 7);
-  
-  P_DATA_OUT: process(clk, rst_n)
+    x_in <= signed(data_in);
+    
+    FILTER_GEN: for i in 0 to NUM_CONSTANTS-1 generate
+        Q1: if i=0 generate
+            U0: filter_comp
+                port map (
+                    D => "0000000000000000",
+                    Q => Q(0),
+                    h => h_values(0),
+                    x => x_in,
+                    out_vld => data_out_vld,
+                    in_vld => data_in_vld,
+                    CLK => CLK
+                );
+        end generate Q1;
+        
+        Q_FILTER: if i>0 generate
+            UZ: filter_comp
+                port map (
+                    D => Q(i-1),
+                    Q => Q(i),
+                    h => h_values(i),
+                    x => x_in,
+                    out_vld => data_out_vld,
+                    in_vld => data_in_vld,
+                    CLK => CLK                    
+                );
+        end generate Q_FILTER;
+    end generate FILTER_GEN;
+    
+    P_DATA_OUT: process(clk)
     begin            
         if rising_edge(clk) then
             if (data_in_vld = '1') then                            
                 data_out_vld <= '1';         
-
-                -- add code here to perform delays		 
-                Q1 <= M4;
-                Q2 <= add1;
-                Q3 <= add2;
-                Q4 <= add3;
                 
-                data_out <= std_logic_vector(y_out);         
+                y_out <= Q(NUM_CONSTANTS-1);
+                data_out <= std_logic_vector(y_out(14 downto 7));         
             else 
                 data_out_vld <= '0';   
             end if;     
